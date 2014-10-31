@@ -1,0 +1,36 @@
+#!/bin/bash
+
+timestamp() {
+  date +"%T"
+}
+
+if [ $# -lt 3 ]; then
+  echo "You're missing parameters"
+  exit 1
+fi
+
+REPO_ROOT=$1
+DOCROOT=$2
+REPO_BRANCH=$3
+
+cd $REPO_ROOT
+
+echo "$(timestamp) Pulling code"
+git fetch origin
+reslog=$(git log HEAD..$REPO_BRANCH --oneline)
+
+if [[ "${reslog}" == "" ]] ; then
+  echo "$(timestamp) No changes to deploy"
+  exit 0
+fi
+
+echo "$(timestamp) Merging code"
+git merge -q --ff-only $REPO_BRANCH
+
+echo "$(timestamp) Deploying changes"
+cd $DOCROOT
+drush cc all
+drush fra -y --force
+drush cc all
+
+echo "$(timestamp) Complete"
